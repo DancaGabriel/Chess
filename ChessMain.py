@@ -2,6 +2,7 @@
 
 import pygame as p
 from ChessEngine import GameState
+from ChessEngine import Move
 
 WIDTH = HEIGHT = 512 # size of the window
 DIMENSION = 8 
@@ -28,13 +29,45 @@ def main():
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     gs = GameState()
+    validMoves = gs.getValidMoves()
+    moveMade = False # flag variable when a move is made
     loadImages()
     running = True
-    
+    sqSelected =() # no square is selected initially, keep track of the last click of the user(row, column)
+    playerClicks = [] #keep track of player clicks
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
+            
+            elif e.type == p.MOUSEBUTTONDOWN:
+                location = p.mouse.get_pos() #(x,y) position of the mouse
+                col = location[0] // SQ_SIZE
+                row = location[1] // SQ_SIZE
+                if sqSelected == (row,col):  # the user clicked the same sqaure twice ( undo move )
+                    sqSelected = () # deselect
+                    playerClicks = []
+                else:
+                   sqSelected = (row, col)
+                   playerClicks.append(sqSelected) # append for 1st and 2nd clicks
+                if len(playerClicks) == 2: # append after the 2nd click
+                    move = Move(playerClicks[0],playerClicks[1],gs.board)
+                    print(move.getChessNotation())
+                    if move in validMoves:
+                        gs.makeMove(move)
+                        moveMade = True
+                    sqSelected = ()
+                    playerClicks = []
+            #key_handler
+            elif e.type == p.KEYDOWN:
+                if e.key == p.K_z:
+                    gs.undoMove()
+                    moveMade = True
+        if moveMade:
+            validMoves = gs.getValidMoves()
+            moveMade = False          
+                    
+                
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
         p.display.flip()
